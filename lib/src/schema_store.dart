@@ -6,14 +6,20 @@ import 'package:json_schema_to_code/src/schema.dart';
 
 class SchemaStore {
   SchemaStore()
-    : documentUriParsedObject = HashMap(),
-      builtSchemas = HashMap(),
-      parsedObjects = HashMap();
+    : _rootParsedObject = SplayTreeMap<String, dynamic>(),
+      _builtSchemas = SplayTreeMap<Uri, Schema>(),
+      _parsedObjects = SplayTreeMap();
 
-  Map<dynamic, dynamic> documentUriParsedObject;
+  Map<String, dynamic> _rootParsedObject;
+  final Map<Uri, Schema> _builtSchemas;
+  final Map<Uri, Map?> _parsedObjects;
 
-  final Map<Uri, Schema> builtSchemas;
-  final Map<Uri, Map?> parsedObjects;
+  void store(String content) =>
+      _rootParsedObject = jsonDecode(content) as Map<String, dynamic>;
+
+  Map<Uri, Schema> get storedBuiltSchemas => _builtSchemas;
+
+  Map<Uri, Map<dynamic, dynamic>?> get storedParsedObjects => _parsedObjects;
 
   Uri? documentUri;
 
@@ -22,39 +28,32 @@ class SchemaStore {
   }
 
   Schema? schemaByUri(Uri uri) {
-    if (!builtSchemas.containsKey(uri)) {
-      return builtSchemas[uri];
+    if (!_builtSchemas.containsKey(uri)) {
+      return _builtSchemas[uri];
     }
     return null;
   }
-
-  Map<Uri, Map<dynamic, dynamic>?> get storedParsedObjects => parsedObjects;
-
-  Map<Uri, Schema> get storedBuiltSchemas => builtSchemas;
 
   void loadSchema(
     Uri uri,
     Schema schema,
     Map<dynamic, dynamic>? object,
   ) {
-    if (builtSchemas.containsKey(uri)) return;
+    // return if this schema has already been processed and stored
+    if (_builtSchemas.containsKey(uri)) return;
 
+    // this is the case when we process the root of the json schema file
     if (object == null) {
-      final content = File(uri.toFilePath()).readAsStringSync();
+      final String content = File(uri.toFilePath()).readAsStringSync();
       store(content);
     }
 
-    parsedObjects[uri] = object ?? getObject();
+    // nested properties will have an object, but root will not
+    _parsedObjects[uri] = object ?? _rootParsedObject;
 
-    if (!builtSchemas.containsKey(uri)) {
-      builtSchemas[uri] = schema;
+    // store this branch
+    if (!_builtSchemas.containsKey(uri)) {
+      _builtSchemas[uri] = schema;
     }
-  }
-
-  void store(String content) =>
-      documentUriParsedObject = jsonDecode(content) as Map<String, dynamic>;
-
-  Map<dynamic, dynamic>? getObject() {
-    return documentUriParsedObject;
   }
 }

@@ -21,7 +21,7 @@ class SchemaToCode {
 
   SchemaToCode.typescriptOnly({required this.pathToSchema})
     : _schemaFile = File(pathToSchema),
-      _schemaStore = SchemaStore() {
+      _schemaStore = SchemaStore()..registerDocumentUri(pathToSchema) {
     assert(
       File(_schemaFile.path).existsSync(),
       'Error: ${_schemaFile.path} not found',
@@ -34,7 +34,7 @@ class SchemaToCode {
 
   SchemaToCode.dartOnly({required this.pathToSchema})
     : _schemaFile = File(pathToSchema),
-      _schemaStore = SchemaStore() {
+      _schemaStore = SchemaStore()..registerDocumentUri(pathToSchema) {
     assert(
       File(_schemaFile.path).existsSync(),
       'Error: ${_schemaFile.path} not found',
@@ -42,7 +42,6 @@ class SchemaToCode {
     _GeneratorDart(schemaFile: _schemaFile);
   }
 
-  // File system
   final String pathToSchema;
   final File _schemaFile;
   final SchemaStore _schemaStore;

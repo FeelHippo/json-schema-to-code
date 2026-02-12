@@ -14,7 +14,7 @@ class Schema {
     this.object,
   }) : _schemaName = uri.pathSegments.last {
     schemaStore.loadSchema(uri, this, object);
-    for (final validator in [
+    for (final void Function() validator in <void Function()>[
       booleanChecks,
       numericChecks,
       stringChecks,
@@ -36,7 +36,7 @@ class Schema {
 
   Schema? _parent;
 
-  String _schemaName;
+  final String _schemaName;
 
   bool get hasParent => _parent != null;
 
