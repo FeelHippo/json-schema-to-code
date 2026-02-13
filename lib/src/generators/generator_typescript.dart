@@ -13,10 +13,14 @@ class GeneratorTypescript {
   final SchemaStore schemaStore;
 
   void build() {
-    final uri = Uri.file(schemaFile.path);
-    final builder = BuilderTypescript(schemaFile, schemaStore, uri);
-    final fileName = getFileName();
-    final outputFile = File(fileName);
+    final Uri uri = Uri.file(schemaFile.path);
+    final BuilderTypescript builder = BuilderTypescript(
+      schemaFile,
+      schemaStore,
+      uri,
+    );
+    final String fileName = getFileName();
+    final File outputFile = File(fileName);
     builder.write(outputFile);
   }
 

@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,13 +5,13 @@ import 'package:json_schema_to_code/src/schema.dart';
 
 class SchemaStore {
   SchemaStore()
-    : _rootParsedObject = SplayTreeMap<String, dynamic>(),
-      _builtSchemas = SplayTreeMap<Uri, Schema>(),
-      _parsedObjects = SplayTreeMap();
+    : _rootParsedObject = <String, dynamic>{},
+      _builtSchemas = <Uri, Schema>{},
+      _parsedObjects = <Uri, Map<String, dynamic>?>{};
 
   Map<String, dynamic> _rootParsedObject;
   final Map<Uri, Schema> _builtSchemas;
-  final Map<Uri, Map?> _parsedObjects;
+  final Map<Uri, Map<String, dynamic>?> _parsedObjects;
 
   void store(String content) =>
       _rootParsedObject = jsonDecode(content) as Map<String, dynamic>;
@@ -37,7 +36,7 @@ class SchemaStore {
   void loadSchema(
     Uri uri,
     Schema schema,
-    Map<dynamic, dynamic>? object,
+    Map<String, dynamic>? object,
   ) {
     // return if this schema has already been processed and stored
     if (_builtSchemas.containsKey(uri)) return;

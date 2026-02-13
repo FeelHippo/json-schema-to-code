@@ -32,7 +32,7 @@ class Schema {
 
   final String Function(Schema) typeInferrer;
 
-  Map<dynamic, dynamic>? object;
+  Map<String, dynamic>? object;
 
   Schema? _parent;
 
@@ -51,8 +51,8 @@ class Schema {
   }
 
   Schema getChildByUri() {
-    final child = schemaStore.builtSchemas.entries
-        .where((entry) {
+    final Schema child = schemaStore.storedBuiltSchemas.entries
+        .where((MapEntry<Uri, Schema> entry) {
           if (entry.value.parent != null) {
             return entry.value.parent!.uri == uri;
           }
@@ -93,7 +93,7 @@ class Schema {
   num? _divisibleBy;
 
   Map<String, num?> readNumericProperties() {
-    final Map<String, num?> properties = HashMap();
+    final Map<String, num?> properties = HashMap<String, num?>();
     properties['multipleOf'] = _multipleOf;
     properties['maximum'] = _maximum;
     properties['exclusiveMaximum'] = _exclusiveMaximum;
@@ -312,7 +312,7 @@ class Schema {
   Schema newSchema({
     required Uri uri,
     required SchemaStore schemaStore,
-    required Map object,
+    required Map<String, dynamic> object,
   }) {
     return Schema(
       uri: uri,
@@ -323,16 +323,18 @@ class Schema {
   }
 
   void objectChecks() {
-    final parsedObject = schemaStore.storedParsedObjects[uri];
+    final Map<dynamic, dynamic>? parsedObject =
+        schemaStore.storedParsedObjects[uri];
 
     assert(parsedObject != null, 'ERROR: invalid schema object');
-    Keywords.getAllKeysByValue(Type.OBJECT).forEach((key) {
+    Keywords.getAllKeysByValue(Type.OBJECT).forEach((String key) {
       validateRecursively<Object>(parsedObject!, key);
     });
   }
 
   void recursiveParsing() {
-    final parsedObject = schemaStore.storedParsedObjects[uri];
+    final Map<dynamic, dynamic>? parsedObject =
+        schemaStore.storedParsedObjects[uri];
 
     assert(parsedObject != null, 'ERROR: invalid schema object');
     if (parsedObject!.containsKey('multipleOf')) {
@@ -377,13 +379,13 @@ class Schema {
     if (parsedObject.containsKey('prefixItems')) {
       final dynamic prefixItems = parsedObject['prefixItems'];
       if (prefixItems is List) {
-        for (var i = 0; i < prefixItems.length; i++) {
-          if (prefixItems[i] is Map) {
-            final schemaUri = PathUtils.append(uri, 'prefixItems$i');
+        for (int i = 0; i < prefixItems.length; i++) {
+          if (prefixItems[i] is Map<String, dynamic>) {
+            final Uri schemaUri = PathUtils.append(uri, 'prefixItems$i');
             newSchema(
               uri: schemaUri,
               schemaStore: schemaStore,
-              object: prefixItems[i] as Map<dynamic, dynamic>,
+              object: prefixItems[i] as Map<String, dynamic>,
             ).parentSchema(this);
             _prefixItems.add(schemaUri);
             _hasPrefixItems = true;
@@ -392,8 +394,8 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('unevaluatedItems')) {
-      final unevaluatedItems = parsedObject['unevaluatedItems'];
-      if (unevaluatedItems is Map) {
+      final dynamic unevaluatedItems = parsedObject['unevaluatedItems'];
+      if (unevaluatedItems is Map<String, dynamic>) {
         newSchema(
           uri: PathUtils.append(uri, 'unevaluatedItems'),
           schemaStore: schemaStore,
@@ -404,20 +406,20 @@ class Schema {
     if (parsedObject.containsKey('items')) {
       final dynamic items = parsedObject['items'];
       if (items is List) {
-        for (var i = 0; i < items.length; i++) {
-          if (items[i] is Map) {
-            final schemaUri = PathUtils.append(uri, 'items$i');
+        for (int i = 0; i < items.length; i++) {
+          if (items[i] is Map<String, dynamic>) {
+            final Uri schemaUri = PathUtils.append(uri, 'items$i');
             newSchema(
               uri: schemaUri,
               schemaStore: schemaStore,
-              object: items[i] as Map<dynamic, dynamic>,
+              object: items[i] as Map<String, dynamic>,
             ).parentSchema(this);
             _items.add(schemaUri);
           }
         }
         _hasItems = true;
-      } else if (items is Map) {
-        final schemaUri = PathUtils.append(uri, 'items');
+      } else if (items is Map<String, dynamic>) {
+        final Uri schemaUri = PathUtils.append(uri, 'items');
         newSchema(
           uri: schemaUri,
           schemaStore: schemaStore,
@@ -443,8 +445,8 @@ class Schema {
       _uniqueItems = parsedObject['uniqueItems'] as bool;
     }
     if (parsedObject.containsKey('contains')) {
-      final contains = parsedObject['contains'];
-      if (contains is Map) {
+      final dynamic contains = parsedObject['contains'];
+      if (contains is Map<String, dynamic>) {
         newSchema(
           uri: PathUtils.append(uri, 'contains'),
           schemaStore: schemaStore,
@@ -459,9 +461,9 @@ class Schema {
       _minProperties = parsedObject['minProperties'] as num?;
     }
     if (parsedObject.containsKey('required')) {
-      final required = parsedObject['required'];
+      final dynamic required = parsedObject['required'];
       if (required is List) {
-        for (var i = 0; i < required.length; i++) {
+        for (int i = 0; i < required.length; i++) {
           if (required[i] is String) {
             _requiredProperties.add(required[i] as String);
           }
@@ -471,8 +473,8 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('additionalProperties')) {
-      final additionalProperties = parsedObject['additionalProperties'];
-      if (additionalProperties is Map) {
+      final dynamic additionalProperties = parsedObject['additionalProperties'];
+      if (additionalProperties is Map<String, dynamic>) {
         newSchema(
           uri: PathUtils.append(uri, 'contains'),
           schemaStore: schemaStore,
@@ -481,8 +483,9 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('unevaluatedProperties')) {
-      final unevaluatedProperties = parsedObject['unevaluatedProperties'];
-      if (unevaluatedProperties is Map) {
+      final dynamic unevaluatedProperties =
+          parsedObject['unevaluatedProperties'];
+      if (unevaluatedProperties is Map<String, dynamic>) {
         newSchema(
           uri: PathUtils.append(uri, 'contains'),
           schemaStore: schemaStore,
@@ -491,16 +494,16 @@ class Schema {
       }
     }
     if (parsedObject.containsKey(r'$defs')) {
-      final defs = parsedObject[r'$defs'];
-      if (defs is Map) {
-        final refPointer = PathUtils.append(uri, r'$defs');
-        for (final entry in defs.entries) {
-          if (entry.key is String && entry.value is Map) {
-            final schemaUri = PathUtils.append(refPointer, entry.key as String);
+      final dynamic defs = parsedObject[r'$defs'];
+      if (defs is Map<String, dynamic>) {
+        final Uri refPointer = PathUtils.append(uri, r'$defs');
+        for (final MapEntry<String, dynamic> entry in defs.entries) {
+          if (entry.value is Map) {
+            final Uri schemaUri = PathUtils.append(refPointer, entry.key);
             newSchema(
               uri: schemaUri,
               schemaStore: schemaStore,
-              object: entry.value as Map,
+              object: entry.value as Map<String, dynamic>,
             ).parentSchema(this);
             _defsUris.add(schemaUri);
           }
@@ -508,19 +511,20 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('properties')) {
-      final properties = parsedObject['properties'];
-      if (properties is Map) {
-        final propertiesPointer = PathUtils.append(uri, 'properties');
-        for (final entry in properties.entries) {
-          if (entry.key is String && entry.value is Map) {
-            final propertyUri = PathUtils.append(
+      final dynamic properties = parsedObject['properties'];
+      if (properties is Map<String, dynamic>) {
+        final Uri propertiesPointer = PathUtils.append(uri, 'properties');
+        for (final MapEntry<String, dynamic> entry in properties.entries) {
+          final dynamic value = entry.value;
+          if (value is Map<String, dynamic>) {
+            final Uri propertyUri = PathUtils.append(
               propertiesPointer,
-              entry.key as String,
+              entry.key,
             );
             newSchema(
               uri: propertyUri,
               schemaStore: schemaStore,
-              object: entry.value as Map,
+              object: value,
             ).parentSchema(this);
             _hasProperties = true;
             _propertiesUris.add(propertyUri);
@@ -529,67 +533,73 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('patternProperties')) {
-      final patternProperties = parsedObject['patternProperties'];
-      if (patternProperties is Map) {
-        final patternPropertiesPointer = PathUtils.append(
+      final dynamic patternProperties = parsedObject['patternProperties'];
+      if (patternProperties is Map<String, dynamic>) {
+        final Uri patternPropertiesPointer = PathUtils.append(
           uri,
           'patternProperties',
         );
-        for (final entry in patternProperties.entries) {
-          if (entry.key is String && entry.value is Map) {
+        for (final MapEntry<String, dynamic> entry
+            in patternProperties.entries) {
+          final dynamic value = entry.value;
+          if (value is Map<String, dynamic>) {
             newSchema(
               uri: PathUtils.append(
                 patternPropertiesPointer,
-                entry.key as String,
+                entry.key,
               ),
               schemaStore: schemaStore,
-              object: entry.value as Map,
+              object: value,
             ).parentSchema(this);
           }
+          _hasPatternProperties = true;
         }
-        _hasPatternProperties = true;
       }
     }
     if (parsedObject.containsKey('dependentRequired')) {
-      final dependentRequired = parsedObject['dependentRequired'];
-      if (dependentRequired is Map) {
-        for (final entry in dependentRequired.entries) {
-          final values = <String>[];
-          for (final dependentRequiredValue in entry.value as List<dynamic>) {
-            if (dependentRequiredValue is String) {
-              values.add(dependentRequiredValue);
+      final dynamic dependentRequired = parsedObject['dependentRequired'];
+      if (dependentRequired is Map<String, dynamic>) {
+        for (final MapEntry<String, dynamic> entry
+            in dependentRequired.entries) {
+          final List<String> values = <String>[];
+          final dynamic value = entry.value;
+          if (value is List) {
+            for (final dynamic dependentRequiredValue in value) {
+              if (dependentRequiredValue is String) {
+                values.add(dependentRequiredValue);
+              }
             }
           }
-          if (entry.key is String) {
-            _dependentRequired[entry.key as String] = values;
-          }
+          _dependentRequired[entry.key] = values;
         }
       }
     }
     if (parsedObject.containsKey('dependentSchemas')) {
-      final dependentSchemas = parsedObject['dependentSchemas'];
-      if (dependentSchemas is Map) {
-        final dependentSchemasPointer = PathUtils.append(
+      final dynamic dependentSchemas = parsedObject['dependentSchemas'];
+      if (dependentSchemas is Map<String, dynamic>) {
+        final Uri dependentSchemasPointer = PathUtils.append(
           uri,
           'dependentSchemas',
         );
-        for (final entry in dependentSchemas.entries) {
-          if (entry.key is String && entry.value is Map) {
+        for (final MapEntry<String, dynamic> entry
+            in dependentSchemas.entries) {
+          final dynamic value = entry.value;
+          if (value is Map<String, dynamic>) {
             newSchema(
               uri: PathUtils.append(
                 dependentSchemasPointer,
-                entry.key as String,
+                entry.key,
               ),
               schemaStore: schemaStore,
-              object: entry.value as Map,
+              object: value,
             ).parentSchema(this);
           }
         }
       }
     }
     if (parsedObject.containsKey('propertyNames')) {
-      final propertyNames = parsedObject['propertyNames'];
-      if (propertyNames is Map) {
+      final dynamic propertyNames = parsedObject['propertyNames'];
+      if (propertyNames is Map<String, dynamic>) {
         newSchema(
           uri: PathUtils.append(uri, 'propertyNames'),
           schemaStore: schemaStore,
@@ -599,18 +609,18 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('const')) {
-      final constValue = parsedObject['const'];
+      final dynamic constValue = parsedObject['const'];
       _hasConst = true;
       _const = constValue;
     }
     if (parsedObject.containsKey('enum')) {
-      final enumValue = parsedObject['enum'];
+      final dynamic enumValue = parsedObject['enum'];
       if (enumValue is List) {
         _enum = enumValue;
       }
     }
     if (parsedObject.containsKey('type')) {
-      final typeValue = parsedObject['type'];
+      final dynamic typeValue = parsedObject['type'];
       if (typeValue is String) {
         _types = [typeValue];
       }
@@ -618,10 +628,10 @@ class Schema {
         _types = typeValue;
       }
     }
-    for (final key in ['if', 'then', 'else']) {
+    for (final String key in <String>['if', 'then', 'else']) {
       if (parsedObject.containsKey(key)) {
-        final jsonSchema = parsedObject[key];
-        if (jsonSchema is Map) {
+        final dynamic jsonSchema = parsedObject[key];
+        if (jsonSchema is Map<String, dynamic>) {
           newSchema(
             uri: PathUtils.append(uri, key),
             schemaStore: schemaStore,
@@ -630,21 +640,22 @@ class Schema {
         }
       }
     }
-    for (final key in ['allOf', 'anyOf', 'oneOf']) {
+    for (final String key in <String>['allOf', 'anyOf', 'oneOf']) {
       if (parsedObject.containsKey(key)) {
-        final jsonSchema = parsedObject[key];
+        final dynamic jsonSchema = parsedObject[key];
         if (jsonSchema is List) {
-          final keyUri = PathUtils.append(
+          final Uri keyUri = PathUtils.append(
             uri,
             key,
           );
-          for (var i = 0; i < jsonSchema.length; i++) {
-            if (jsonSchema[i] is Map) {
-              final propertyUri = PathUtils.append(keyUri, '$i');
+          for (int i = 0; i < jsonSchema.length; i++) {
+            final dynamic value = jsonSchema[i];
+            if (value is Map<String, dynamic>) {
+              final Uri propertyUri = PathUtils.append(keyUri, '$i');
               newSchema(
                 uri: propertyUri,
                 schemaStore: schemaStore,
-                object: jsonSchema[i] as Map,
+                object: value,
               ).parentSchema(this);
               _someOfUris.add(propertyUri);
             }
@@ -654,44 +665,44 @@ class Schema {
       }
     }
     // String
-    for (final pair in [
-      [r'$anchor', (String value) => _anchor = value],
-      [r'$comment', (String value) => _comment = value],
-      [r'$dynamicAnchor', (String value) => _dynamicAnchor = value],
+    for (final List<Object> pair in <List<Object>>[
+      <Object>[r'$anchor', (String value) => _anchor = value],
+      <Object>[r'$comment', (String value) => _comment = value],
+      <Object>[r'$dynamicAnchor', (String value) => _dynamicAnchor = value],
     ]) {
-      final key = pair[0];
-      final capsule = pair[1] as void Function(String);
+      final Object key = pair[0];
+      final void Function(String) capsule = pair[1] as void Function(String);
       if (parsedObject.containsKey(key)) {
-        final jsonSchema = parsedObject[key];
+        final dynamic jsonSchema = parsedObject[key];
         if (jsonSchema is String) {
           capsule(jsonSchema);
         }
       }
     }
     // URI
-    for (final pair in [
-      [
+    for (final List<Object> pair in <List<Object>>[
+      <Object>[
         r'$dynamicRef',
         (String value) => _dynamicRef = PathUtils.append(
           schemaStore.documentUri!,
           PathUtils.normalizeReference(value),
         ),
       ],
-      [
+      <Object>[
         r'$id',
         (String value) => _id = PathUtils.append(
           schemaStore.documentUri!,
           PathUtils.normalizeReference(value),
         ),
       ],
-      [
+      <Object>[
         r'$ref',
         (String value) => _ref = PathUtils.append(
           schemaStore.documentUri!,
           PathUtils.normalizeReference(value),
         ),
       ],
-      [
+      <Object>[
         r'$schema',
         (String value) => _schema = PathUtils.append(
           schemaStore.documentUri!,
@@ -699,18 +710,18 @@ class Schema {
         ),
       ],
     ]) {
-      final key = pair[0];
-      final capsule = pair[1] as void Function(String);
+      final Object key = pair[0];
+      final void Function(String) capsule = pair[1] as void Function(String);
       if (parsedObject.containsKey(key)) {
-        final jsonSchema = parsedObject[key];
+        final dynamic jsonSchema = parsedObject[key];
         if (jsonSchema is String) {
           capsule(jsonSchema);
         }
       }
     }
     if (parsedObject.containsKey('not')) {
-      final not = parsedObject['not'];
-      if (not is Map) {
+      final dynamic not = parsedObject['not'];
+      if (not is Map<String, dynamic>) {
         newSchema(
           uri: PathUtils.append(uri, 'not'),
           schemaStore: schemaStore,
@@ -719,23 +730,23 @@ class Schema {
       }
     }
     if (parsedObject.containsKey('default')) {
-      final defaultValue = parsedObject['default'];
+      final dynamic defaultValue = parsedObject['default'];
       _default = defaultValue;
     }
     if (parsedObject.containsKey('title')) {
-      final title = parsedObject['title'];
+      final dynamic title = parsedObject['title'];
       if (title is String) {
         _title = title;
       }
     }
     if (parsedObject.containsKey('description')) {
-      final description = parsedObject['description'];
+      final dynamic description = parsedObject['description'];
       if (description is String) {
         _description = description;
       }
     }
     if (parsedObject.containsKey('examples')) {
-      final examples = parsedObject['examples'];
+      final dynamic examples = parsedObject['examples'];
       if (examples is List) {
         examples.forEach(_examples.add);
       }

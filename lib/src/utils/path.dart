@@ -3,8 +3,8 @@ class PathUtils {
 
   // https://github.com/jimblackler/jsonschemafriend/blob/e66880bae0d86664afb65d0b953872b3e021d48b/library/src/main/java/net/jimblackler/jsonschemafriend/PathUtils.java#L200
   static Uri normalize(Uri uri) {
-    final stringified = uri.toFilePath();
-    final length = stringified.length;
+    final String stringified = uri.toFilePath();
+    final int length = stringified.length;
     if (stringified.endsWith('#')) {
       return Uri.file(stringified.substring(0, length - 1));
     }
@@ -25,11 +25,11 @@ class PathUtils {
   static Uri resolve(Uri base, Uri child) {
     if (child.hasScheme) return child;
 
-    final stringifiedBase = base.toFilePath();
-    final stringifiedChild = child.toFilePath();
+    final String stringifiedBase = base.toFilePath();
+    final String stringifiedChild = child.toFilePath();
 
-    final i = stringifiedBase.indexOf('#');
-    final baseWithoutFragment = i == -1
+    final int i = stringifiedBase.indexOf('#');
+    final String baseWithoutFragment = i == -1
         ? stringifiedBase
         : stringifiedBase.substring(0, i);
 
@@ -37,7 +37,7 @@ class PathUtils {
       return Uri.file(baseWithoutFragment + stringifiedChild);
     }
 
-    var lastSlashIndex = baseWithoutFragment.lastIndexOf('/');
+    int lastSlashIndex = baseWithoutFragment.lastIndexOf('/');
     if (lastSlashIndex == -1) {
       lastSlashIndex = baseWithoutFragment.lastIndexOf(':');
       if (lastSlashIndex == -1) {
@@ -54,7 +54,7 @@ class PathUtils {
 
   // https://github.com/jimblackler/jsonschemafriend/blob/e66880bae0d86664afb65d0b953872b3e021d48b/library/src/main/java/net/jimblackler/jsonschemafriend/PathUtils.java#L18C10-L35C4
   static Uri append(Uri uri, String value) {
-    var uriString = uri.toFilePath();
+    String uriString = uri.toFilePath();
     if (!uriString.contains('#')) {
       uriString += '#';
     }

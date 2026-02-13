@@ -30,17 +30,19 @@ class BuilderTypescript extends GeneratorTypescript {
   }
 
   List<String> readTypeList(Schema defSchema) {
-    final someOfAndPrefixItems =
-        [...defSchema.someOfUris, ...defSchema.prefixItems].map((someOfUri) {
-          final someOfUrisSchema = findSchemaByUri(someOfUri)!;
-          for (final uriProperties
+    final List<String> someOfAndPrefixItems =
+        <Uri>[...defSchema.someOfUris, ...defSchema.prefixItems].map((
+          Uri someOfUri,
+        ) {
+          final Schema someOfUrisSchema = findSchemaByUri(someOfUri)!;
+          for (final Uri? uriProperties
               in someOfUrisSchema.readTypeURIProperties().values) {
             if (uriProperties != null) {
-              final someOfUrisSchema = findSchemaByUri(uriProperties)!;
+              final Schema someOfUrisSchema = findSchemaByUri(uriProperties)!;
               return someOfUrisSchema.fullClassName();
             }
           }
-          final inferredType = getInferredTypes(someOfUrisSchema);
+          final String inferredType = getInferredTypes(someOfUrisSchema);
           return inferredType;
         }).toList();
     if (someOfAndPrefixItems.isNotEmpty) return someOfAndPrefixItems;
@@ -59,25 +61,28 @@ class BuilderTypescript extends GeneratorTypescript {
       );
 
       // content
-      for (final propertyUri in schema.propertiesUris) {
-        final propertySchema = schemaStore.builtSchemas.entries
+      for (final Uri propertyUri in schema.propertiesUris) {
+        final Schema propertySchema = schemaStore.storedBuiltSchemas.entries
             .firstWhere(
-              (uriToSchema) => uriToSchema.key == propertyUri,
+              (MapEntry<Uri, Schema> uriToSchema) =>
+                  uriToSchema.key == propertyUri,
             )
             .value;
 
         // $defs: $dynamicRef, $id, $ref, $schema
-        final propertiesOfTypeUri = propertySchema.readTypeURIProperties();
-        for (final propertyOfTypeUri in propertiesOfTypeUri.values) {
+        final Map<String, Uri?> propertiesOfTypeUri = propertySchema
+            .readTypeURIProperties();
+        for (final Uri? propertyOfTypeUri in propertiesOfTypeUri.values) {
           if (propertyOfTypeUri != null) {
             defSchema = findSchemaByUri(propertyOfTypeUri);
           }
         }
 
         // $anchor, $comment, $dynamicAnchor, title, description
-        final propertiesOfTypeString = propertySchema
+        final Map<String, String?> propertiesOfTypeString = propertySchema
             .readTypeStringProperties();
-        for (final propertyOfTypeString in propertiesOfTypeString.values) {
+        for (final String? propertyOfTypeString
+            in propertiesOfTypeString.values) {
           if (propertyOfTypeString != null) {
             writeLine(
               outputFile,
@@ -87,10 +92,12 @@ class BuilderTypescript extends GeneratorTypescript {
           }
         }
 
-        final propertyName = propertySchema.uri.pathSegments.last;
-        final propertyValue =
+        final String propertyName = propertySchema.uri.pathSegments.last;
+        final String propertyValue =
             defSchema?.fullClassName() ?? propertySchema.inferType();
-        final isRequired = schema.requiredProperties.contains(propertyName);
+        final bool isRequired = schema.requiredProperties.contains(
+          propertyName,
+        );
         writeLine(
           outputFile,
           '$propertyName${isRequired ? '' : '?'}: $propertyValue;',
@@ -110,13 +117,14 @@ class BuilderTypescript extends GeneratorTypescript {
       String? propertyType;
       defSchema = findSchemaByUri(schema.item!);
       if (defSchema != null) {
-        final uriProperties = defSchema.readTypeURIProperties();
+        final Map<String, Uri?> uriProperties = defSchema
+            .readTypeURIProperties();
         // schema is $dynamicRef | $id | $ref | $schema
-        for (final uriProperty in uriProperties.values) {
+        for (final Uri? uriProperty in uriProperties.values) {
           if (uriProperty != null) {
             defSchema = findSchemaByUri(uriProperty);
             if (defSchema != null) {
-              final typeList = readTypeList(defSchema);
+              final List<String> typeList = readTypeList(defSchema);
               propertyType = typeListToString(typeList, defSchema);
             }
           }
@@ -125,8 +133,10 @@ class BuilderTypescript extends GeneratorTypescript {
 
       if (!schema.hasBeenWritten) {
         // $anchor, $comment, $dynamicAnchor, title, description
-        final propertiesOfTypeString = schema.readTypeStringProperties();
-        for (final propertyOfTypeString in propertiesOfTypeString.values) {
+        final Map<String, String?> propertiesOfTypeString = schema
+            .readTypeStringProperties();
+        for (final String? propertyOfTypeString
+            in propertiesOfTypeString.values) {
           if (propertyOfTypeString != null) {
             writeLine(
               outputFile,
@@ -144,8 +154,10 @@ class BuilderTypescript extends GeneratorTypescript {
       if (defSchema != null) {
         if (defSchema.hasBeenWritten) return;
         // $anchor, $comment, $dynamicAnchor, title, description
-        final propertiesOfTypeString = defSchema.readTypeStringProperties();
-        for (final propertyOfTypeString in propertiesOfTypeString.values) {
+        final Map<String, String?> propertiesOfTypeString = defSchema
+            .readTypeStringProperties();
+        for (final String? propertyOfTypeString
+            in propertiesOfTypeString.values) {
           if (propertyOfTypeString != null) {
             writeLine(
               outputFile,
@@ -162,7 +174,7 @@ class BuilderTypescript extends GeneratorTypescript {
       // items properties (list schema)
     } else if (schema.hasItems) {
       String? propertyType;
-      final typeList = readTypeList(schema);
+      final List<String> typeList = readTypeList(schema);
       propertyType = typeListToString(typeList, schema);
       writeLine(
         outputFile,
@@ -177,7 +189,8 @@ class BuilderTypescript extends GeneratorTypescript {
       outputFile,
       '// this file was autogenerated, please do not modify',
     );
-    for (final schema in schemaStore.builtSchemas.entries) {
+    for (final MapEntry<Uri, Schema> schema
+        in schemaStore.storedBuiltSchemas.entries) {
       writeObject(outputFile, schema.value);
     }
   }
@@ -186,12 +199,12 @@ class BuilderTypescript extends GeneratorTypescript {
     List<String> types,
     Schema schema,
   ) {
-    final isClassSchema = schema.isClass;
-    final fullClassName = schema.fullClassName();
-    final hasItems = schema.hasItems || schema.hasItem;
+    final bool isClassSchema = schema.isClass;
+    final String fullClassName = schema.fullClassName();
+    final bool hasItems = schema.hasItems || schema.hasItem;
     // https://github.com/jimblackler/jsonschematypes/blob/6054b6283f38b84a8642b6176369ba7526862132/codegen/src/main/java/net/jimblackler/jsonschematypes/codegen/TypeScriptBuilder.java#L56
-    var typeOutput = '';
-    for (final type in types) {
+    String typeOutput = '';
+    for (final String type in types) {
       if (isClassSchema) {
         if (typeOutput.isNotEmpty) {
           typeOutput += ' | ';
@@ -205,14 +218,15 @@ class BuilderTypescript extends GeneratorTypescript {
           typeOutput += 'Object';
         } else {
           Schema? defSchema;
-          final itemsSchema = schema.getChildByUri();
-          final uriProperties = itemsSchema.readTypeURIProperties();
-          for (final uriProperty in uriProperties.values) {
+          final Schema itemsSchema = schema.getChildByUri();
+          final Map<String, Uri?> uriProperties = itemsSchema
+              .readTypeURIProperties();
+          for (final Uri? uriProperty in uriProperties.values) {
             if (uriProperty != null) {
               defSchema = findSchemaByUri(uriProperty);
             }
           }
-          final itemsSchemaFullClassname = itemsSchema.fullClassName();
+          final String itemsSchemaFullClassname = itemsSchema.fullClassName();
           typeOutput += defSchema?.fullClassName() ?? itemsSchemaFullClassname;
         }
         typeOutput += '[]';
@@ -233,30 +247,30 @@ class BuilderTypescript extends GeneratorTypescript {
         schema,
       );
     }
-    final inferredTypes = <String>[];
+    final List<String> inferredTypes = <String>[];
     if (schema.enumValue != null &&
-        schema.enumValue!.every((value) => value is String)) {
-      schema.enumValue! as List<String>..forEach(inferredTypes.add);
+        schema.enumValue!.every((dynamic value) => value is String)) {
+      (schema.enumValue! as List<String>).forEach(inferredTypes.add);
     }
     if (schema.readStringProperties().values.any(
-      (property) => property != null,
+      (String? property) => property != null,
     )) {
       inferredTypes.add('string');
     }
     if (schema.readNumericProperties().values.any(
-      (property) => property != null,
+      (num? property) => property != null,
     )) {
       inferredTypes.add('number');
     }
     if (schema.readListProperties().values.any(
-          (property) => property != null,
+          (num? property) => property != null,
         ) ||
         schema.uniqueItems ||
         schema.hasItems) {
       inferredTypes.add('array');
     }
     if (schema.readObjectProperties().values.any(
-          (property) => property != null,
+          (num? property) => property != null,
         ) ||
         schema.required ||
         schema.requiredProperties.isNotEmpty ||
@@ -267,7 +281,7 @@ class BuilderTypescript extends GeneratorTypescript {
       inferredTypes.add('object');
     }
     if (schema.defaultValue != null) {
-      final dartType = schema.defaultValue.runtimeType;
+      final Type dartType = schema.defaultValue.runtimeType;
       if (dartType == String) {
         inferredTypes.add('string');
       } else if (dartType == int || dartType == double) {
@@ -285,6 +299,6 @@ class BuilderTypescript extends GeneratorTypescript {
   }
 
   Schema? findSchemaByUri(Uri uri) {
-    return schemaStore.builtSchemas[uri];
+    return schemaStore.storedBuiltSchemas[uri];
   }
 }

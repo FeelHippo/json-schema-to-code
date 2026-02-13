@@ -23,8 +23,8 @@ class Keywords {
   static Type get(String key) => getKeyTypes()[key] ?? Type.ANY;
 
   static List<String> getAllKeysByValue(Type type) => getKeyTypes().entries
-      .where((item) => item.value == type)
-      .map((item) => item.key)
+      .where((MapEntry<String, Type> item) => item.value == type)
+      .map((MapEntry<String, Type> item) => item.key)
       .toList();
 
   static bool isVariable(Type type) => [
