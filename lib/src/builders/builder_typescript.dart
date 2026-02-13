@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:json_schema_to_code/src/generators/generator_typescript.dart';
 import 'package:json_schema_to_code/src/schema.dart';
 import 'package:json_schema_to_code/src/schema_store.dart';
+import 'package:json_schema_to_code/src/utils/path.dart';
 import 'package:json_schema_to_code/src/utils/string.dart';
 
 class BuilderTypescript extends GeneratorTypescript {
@@ -180,6 +181,41 @@ class BuilderTypescript extends GeneratorTypescript {
         outputFile,
         'export type ${schema.fullClassName()} = $propertyType;\n',
       );
+    } else if (schema.hasPatternProperties) {
+      print(schema.schemaName);
+      // open
+      writeLine(
+        outputFile,
+        'export interface RegexMatched${schema.schemaName} {',
+      );
+      print('~~~ ${schema.uri}');
+      for (final MapEntry<String, String> entry
+          in schema.patternPropertiesRegexMatcher.entries) {
+        final Schema? patternProperties = findSchemaByUri(
+          PathUtils.append(schema.uri, entry.key),
+        );
+        print(
+          '~~~ ${patternProperties}',
+        );
+        // TODO(Filippo): take it from here.
+        // entry.key == '0'.
+        // entry.value == regex expression.
+        // patternProperties == // { '.../fileFormats/0': { "type": "integer" }, '.../fileFormats/1': { "type": "string" } }
+        // each line should be [key: RegexMatched${schema.schemaName}<entry.value>]: regex_here (patternProperties[entry.key])
+      }
+      // close
+      writeLine(
+        outputFile,
+        '}\n',
+      );
+      schema.markAsWritten();
+      for (final MapEntry<String, String> regexMatcher
+          in schema.patternPropertiesRegexMatcher.entries) {
+        writeLine(
+          outputFile,
+          'type ${regexMatcher.key}RegexMatched<Pattern extends string> = `\${string & {__brand: Pattern}}`;',
+        );
+      }
     }
     schema.markAsWritten();
   }
@@ -276,7 +312,6 @@ class BuilderTypescript extends GeneratorTypescript {
         schema.requiredProperties.isNotEmpty ||
         schema.dependentRequired.isNotEmpty ||
         schema.isClass ||
-        schema.hasPatternProperties ||
         schema.hasPropertyNames) {
       inferredTypes.add('object');
     }

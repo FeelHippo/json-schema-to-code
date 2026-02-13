@@ -154,13 +154,16 @@ class Schema {
   bool _hasProperties = false;
   bool _hasPatternProperties = false;
   bool _hasPropertyNames = false;
-  final List<String> _requiredProperties = [];
-  final List<Uri> _propertiesUris = [];
-  final List<Uri> _defsUris = [];
-  final Map<String, List<String>> _dependentRequired = HashMap();
+  final List<String> _requiredProperties = <String>[];
+  final List<Uri> _propertiesUris = <Uri>[];
+  final List<Uri> _defsUris = <Uri>[];
+  final Map<String, List<String>> _dependentRequired =
+      HashMap<String, List<String>>();
+  final HashMap<String, String> _patternPropertiesRegexMatcher =
+      HashMap<String, String>(); // <name, pattern>
 
   Map<String, num?> readObjectProperties() {
-    final Map<String, num?> properties = HashMap();
+    final Map<String, num?> properties = HashMap<String, num?>();
     properties['maxProperties'] = _maxProperties;
     properties['minProperties'] = _minProperties;
     return properties;
@@ -184,6 +187,9 @@ class Schema {
 
   Map<String, List<String>> get dependentRequired => _dependentRequired;
 
+  Map<String, String> get patternPropertiesRegexMatcher =>
+      _patternPropertiesRegexMatcher;
+
   // type properties
   String? _anchor;
   String? _comment;
@@ -197,9 +203,9 @@ class Schema {
   bool _hasConst = false;
   dynamic _const;
   List<dynamic>? _enum;
-  List<String> _types = [];
+  List<String> _types = <String>[];
   dynamic _default;
-  final List<dynamic> _examples = [];
+  final List<dynamic> _examples = <dynamic>[];
 
   Map<String, String?> readTypeStringProperties() {
     final Map<String, String?> properties = HashMap();
@@ -234,7 +240,7 @@ class Schema {
   List<dynamic> get examples => _examples;
 
   void validateRecursively<T>(Map<dynamic, dynamic> parsedObject, String key) {
-    for (final property in parsedObject.entries) {
+    for (final MapEntry<dynamic, dynamic> property in parsedObject.entries) {
       if (property.key == key) {
         assert(
           property.value is T,
@@ -247,7 +253,7 @@ class Schema {
     }
   }
 
-  final List<Uri> _someOfUris = [];
+  final List<Uri> _someOfUris = <Uri>[];
 
   List<Uri> get someOfUris => _someOfUris;
 
@@ -255,15 +261,15 @@ class Schema {
 
   bool get hasSomeOf => _hasSomeOf;
 
-  final List<Uri> _items = [];
+  final List<Uri> _items = <Uri>[];
 
-  List<Uri> get items => [..._items, ..._prefixItems];
+  List<Uri> get items => <Uri>[..._items, ..._prefixItems];
 
   Uri? _item;
 
   Uri? get item => _item;
 
-  final List<Uri> _prefixItems = [];
+  final List<Uri> _prefixItems = <Uri>[];
 
   List<Uri> get prefixItems => _prefixItems;
 
@@ -274,37 +280,41 @@ class Schema {
   // [Map, Type.OBJECT]
 
   void booleanChecks() {
-    final parsedObject = schemaStore.storedParsedObjects[uri];
+    final Map<dynamic, dynamic>? parsedObject =
+        schemaStore.storedParsedObjects[uri];
 
     assert(parsedObject != null, 'ERROR: invalid schema object');
-    Keywords.getAllKeysByValue(Type.BOOLEAN).forEach((key) {
+    Keywords.getAllKeysByValue(Type.BOOLEAN).forEach((String key) {
       validateRecursively<bool>(parsedObject!, key);
     });
   }
 
   void numericChecks() {
-    final parsedObject = schemaStore.storedParsedObjects[uri];
+    final Map<dynamic, dynamic>? parsedObject =
+        schemaStore.storedParsedObjects[uri];
 
     assert(parsedObject != null, 'ERROR: invalid schema object');
-    Keywords.getAllKeysByValue(Type.NUMBER).forEach((key) {
+    Keywords.getAllKeysByValue(Type.NUMBER).forEach((String key) {
       validateRecursively<num>(parsedObject!, key);
     });
   }
 
   void stringChecks() {
-    final parsedObject = schemaStore.storedParsedObjects[uri];
+    final Map<dynamic, dynamic>? parsedObject =
+        schemaStore.storedParsedObjects[uri];
 
     assert(parsedObject != null, 'ERROR: invalid schema object');
-    Keywords.getAllKeysByValue(Type.STRING).forEach((key) {
+    Keywords.getAllKeysByValue(Type.STRING).forEach((String key) {
       validateRecursively<String>(parsedObject!, key);
     });
   }
 
   void arrayChecks() {
-    final parsedObject = schemaStore.storedParsedObjects[uri];
+    final Map<dynamic, dynamic>? parsedObject =
+        schemaStore.storedParsedObjects[uri];
 
     assert(parsedObject != null, 'ERROR: invalid schema object');
-    Keywords.getAllKeysByValue(Type.ARRAY).forEach((key) {
+    Keywords.getAllKeysByValue(Type.ARRAY).forEach((String key) {
       validateRecursively<List<dynamic>>(parsedObject!, key);
     });
   }
@@ -535,25 +545,28 @@ class Schema {
     if (parsedObject.containsKey('patternProperties')) {
       final dynamic patternProperties = parsedObject['patternProperties'];
       if (patternProperties is Map<String, dynamic>) {
-        final Uri patternPropertiesPointer = PathUtils.append(
-          uri,
-          'patternProperties',
-        );
-        for (final MapEntry<String, dynamic> entry
-            in patternProperties.entries) {
+        patternProperties.entries.toList().asMap().forEach((
+          int index,
+          MapEntry<String, dynamic> entry,
+        ) {
+          final dynamic key = entry.key;
           final dynamic value = entry.value;
+          if (key is String) {
+            // { 0: '^[a-z]+$', 1: '^[a-z]+$', ... }
+            _patternPropertiesRegexMatcher.addAll(<String, String>{
+              '$index': key,
+            });
+          }
           if (value is Map<String, dynamic>) {
+            // { '.../fileFormats/0': { "type": "integer" }, '.../fileFormats/1': { "type": "string" } }
             newSchema(
-              uri: PathUtils.append(
-                patternPropertiesPointer,
-                entry.key,
-              ),
+              uri: PathUtils.append(uri, '$index'),
               schemaStore: schemaStore,
               object: value,
             ).parentSchema(this);
           }
-          _hasPatternProperties = true;
-        }
+        });
+        _hasPatternProperties = true;
       }
     }
     if (parsedObject.containsKey('dependentRequired')) {
@@ -622,7 +635,7 @@ class Schema {
     if (parsedObject.containsKey('type')) {
       final dynamic typeValue = parsedObject['type'];
       if (typeValue is String) {
-        _types = [typeValue];
+        _types = <String>[typeValue];
       }
       if (typeValue is List<String>) {
         _types = typeValue;
