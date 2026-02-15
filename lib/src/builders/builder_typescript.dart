@@ -111,7 +111,6 @@ class BuilderTypescript extends GeneratorTypescript {
         outputFile,
         '}\n',
       );
-      schema.markAsWritten();
       // items property (object schema)
     } else if (schema.hasItem && schema.item != null) {
       Schema? defSchema;
@@ -149,7 +148,6 @@ class BuilderTypescript extends GeneratorTypescript {
           outputFile,
           'export type ${schema.fullClassName()} = ${schema.inferType()};\n',
         );
-        schema.markAsWritten();
       }
 
       if (defSchema != null) {
@@ -170,7 +168,6 @@ class BuilderTypescript extends GeneratorTypescript {
           outputFile,
           'export type ${defSchema.fullClassName()} = $propertyType;\n',
         );
-        defSchema.markAsWritten();
       }
       // items properties (list schema)
     } else if (schema.hasItems) {
@@ -182,38 +179,68 @@ class BuilderTypescript extends GeneratorTypescript {
         'export type ${schema.fullClassName()} = $propertyType;\n',
       );
     } else if (schema.hasPatternProperties) {
-      print(schema.schemaName);
+      if (schema.hasBeenWritten) return;
       // open
       writeLine(
         outputFile,
-        'export interface RegexMatched${schema.schemaName} {',
+        'export interface ${schema.schemaName}RegexMatched {',
       );
-      print('~~~ ${schema.uri}');
       for (final MapEntry<String, String> entry
           in schema.patternPropertiesRegexMatcher.entries) {
-        final Schema? patternProperties = findSchemaByUri(
+        Schema? defSchema;
+        final Schema? patternPropertiesSchema = findSchemaByUri(
           PathUtils.append(schema.uri, entry.key),
         );
-        print(
-          '~~~ ${patternProperties}',
-        );
+        if (patternPropertiesSchema == null) {
+          return;
+        }
         // TODO(Filippo): take it from here.
         // entry.key == '0'.
         // entry.value == regex expression.
-        // patternProperties == // { '.../fileFormats/0': { "type": "integer" }, '.../fileFormats/1': { "type": "string" } }
-        // each line should be [key: RegexMatched${schema.schemaName}<entry.value>]: regex_here (patternProperties[entry.key])
+        // patternPropertiesSchema == // { '.../fileFormats/0': { "type": "integer" }, '.../fileFormats/1': { "type": "string" } }
+
+        // $defs: $dynamicRef, $id, $ref, $schema
+        final Map<String, Uri?> propertiesOfTypeUri = patternPropertiesSchema
+            .readTypeURIProperties();
+        for (final Uri? propertyOfTypeUri in propertiesOfTypeUri.values) {
+          if (propertyOfTypeUri != null) {
+            defSchema = findSchemaByUri(propertyOfTypeUri);
+          }
+        }
+
+        // $anchor, $comment, $dynamicAnchor, title, description
+        final Map<String, String?> propertiesOfTypeString =
+            patternPropertiesSchema.readTypeStringProperties();
+        for (final String? propertyOfTypeString
+            in propertiesOfTypeString.values) {
+          if (propertyOfTypeString != null) {
+            writeLine(
+              outputFile,
+              '// $propertyOfTypeString',
+              indentation: 2,
+            );
+          }
+        }
+        final String propertyValue =
+            defSchema?.fullClassName() ?? patternPropertiesSchema.inferType();
+
+        writeLine(
+          outputFile,
+          '[key: RegexMatched${entry.key}<"${entry.value}">]: $propertyValue;',
+          indentation: 2,
+        );
       }
       // close
       writeLine(
         outputFile,
         '}\n',
       );
-      schema.markAsWritten();
+      // https://www.geeksforgeeks.org/typescript/how-to-define-a-regex-matched-string-type-in-typescript/
       for (final MapEntry<String, String> regexMatcher
           in schema.patternPropertiesRegexMatcher.entries) {
         writeLine(
           outputFile,
-          'type ${regexMatcher.key}RegexMatched<Pattern extends string> = `\${string & {__brand: Pattern}}`;',
+          'type RegexMatched${regexMatcher.key}<Pattern extends string> = `\${string & {__brand: Pattern}}`;',
         );
       }
     }

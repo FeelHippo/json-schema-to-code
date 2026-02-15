@@ -30,7 +30,9 @@
           "type": "string"
         }
       },
-      "required": ["name"]
+      "required": [
+        "name"
+      ]
     }
   },
   "id": "https://json.schemastore.org/lego.json",
@@ -64,7 +66,10 @@
             "$ref": "#/$defs/file"
           }
         },
-        "required": ["type", "path"]
+        "required": [
+          "type",
+          "path"
+        ]
       }
     },
     "fileFormats": {
@@ -77,6 +82,8 @@
       }
     }
   },
-  "required": ["blocks"],
+  "required": [
+    "blocks"
+  ],
   "type": "object"
 }
