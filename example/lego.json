@@ -40,37 +40,29 @@
     "blocks": {
       "description": "An array of your app's blocks.",
       "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "description": "The name of the block type",
-            "type": "string"
-          },
-          "path": {
-            "description": "Path relative to root where the block will be stored",
-            "type": "string"
-          },
-          "isFile": {
-            "description": "Is this a file? or a folder? False by default.",
-            "type": "boolean"
-          },
-          "files": {
-            "description": "Files making up the block",
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/file"
-            }
-          },
-          "file": {
-            "$ref": "#/$defs/file"
-          }
+      "prefixItems": [
+        {
+          "type": "number"
         },
-        "required": [
-          "type",
-          "path"
-        ]
-      }
+        {
+          "type": "string"
+        },
+        {
+          "enum": [
+            "Street",
+            "Avenue",
+            "Boulevard"
+          ]
+        },
+        {
+          "enum": [
+            "NW",
+            "NE",
+            "SW",
+            "SE"
+          ]
+        }
+      ]
     },
     "fileFormats": {
       "description": "An object mapping file objects to strings",

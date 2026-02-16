@@ -6,6 +6,10 @@ class StringUtils {
     return Casing.pascalCase(withoutExtension);
   }
 
+  static String enumName(String enumName) {
+    return Casing.pascalCase(enumName);
+  }
+
   static String normalizeLine(String line) {
     return line
         .replaceAll(

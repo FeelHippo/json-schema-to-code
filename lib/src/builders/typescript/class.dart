@@ -111,10 +111,6 @@ mixin Class {
       if (patternPropertiesSchema == null) {
         return;
       }
-      // TODO(Filippo): take it from here.
-      // entry.key == '0'.
-      // entry.value == regex expression.
-      // patternPropertiesSchema == // { '.../fileFormats/0': { "type": "integer" }, '.../fileFormats/1': { "type": "string" } }
 
       // $defs: $dynamicRef, $id, $ref, $schema
       final Map<String, Uri?> propertiesOfTypeUri = patternPropertiesSchema

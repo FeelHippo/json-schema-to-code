@@ -5,6 +5,7 @@ import 'package:json_schema_to_code/src/schema.dart';
 import 'package:json_schema_to_code/src/schema_store.dart';
 import 'package:json_schema_to_code/src/utils/output.dart';
 import 'package:json_schema_to_code/src/utils/path.dart';
+import 'package:json_schema_to_code/src/utils/string.dart';
 
 part 'typescript/class.dart';
 part 'typescript/items.dart';
@@ -49,20 +50,19 @@ class BuilderTypescript extends GeneratorTypescript with Class, Items {
         schemaStore: schemaStore,
         outputFile: outputFile,
       );
-    } else if (schema.hasItem && schema.item != null) {
-      writeItem(
+    } else if (schema.hasPrefixItems) {
+      writePrefixItems(
         schema: schema,
         schemaStore: schemaStore,
         outputFile: outputFile,
         readTypeList: _readTypeList,
         typeListToString: _typeListToString,
       );
-    } else if (schema.hasItems) {
-      writeItems(
+    } else if (schema.hasEnum) {
+      writeEnum(
         schema: schema,
+        schemaStore: schemaStore,
         outputFile: outputFile,
-        readTypeList: _readTypeList,
-        typeListToString: _typeListToString,
       );
     } else if (schema.hasPatternProperties) {
       writePatternProperties(
@@ -100,7 +100,7 @@ class BuilderTypescript extends GeneratorTypescript with Class, Items {
   ) {
     final bool isClassSchema = schema.isClass;
     final String fullClassName = schema.fullClassName();
-    final bool hasItems = schema.hasItems || schema.hasItem;
+    final bool hasItems = schema.hasItems || schema.hasItems;
     // https://github.com/jimblackler/jsonschematypes/blob/6054b6283f38b84a8642b6176369ba7526862132/codegen/src/main/java/net/jimblackler/jsonschematypes/codegen/TypeScriptBuilder.java#L56
     String typeOutput = '';
     for (final String type in types) {

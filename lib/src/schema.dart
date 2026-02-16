@@ -127,7 +127,6 @@ class Schema {
   num? _minItems;
   bool _uniqueItems = false;
   bool _hasItems = false;
-  bool _hasItem = false;
   bool _hasPrefixItems = false;
   num? _maxContains;
   num? _minContains;
@@ -143,9 +142,9 @@ class Schema {
 
   bool get uniqueItems => _uniqueItems;
 
-  bool get hasItems => _hasItems || _hasPrefixItems;
+  bool get hasItems => _hasItems;
 
-  bool get hasItem => _hasItem;
+  bool get hasPrefixItems => _hasPrefixItems;
 
   // object properties
   num? _maxProperties;
@@ -202,6 +201,7 @@ class Schema {
   String? _description;
   bool _hasConst = false;
   dynamic _const;
+  bool _hasEnum = false;
   List<dynamic>? _enum;
   List<String> _types = <String>[];
   dynamic _default;
@@ -230,6 +230,8 @@ class Schema {
   bool get hasConst => _hasConst;
 
   dynamic get constValue => _const;
+
+  bool get hasEnum => _hasEnum;
 
   List<dynamic>? get enumValue => _enum;
 
@@ -261,17 +263,13 @@ class Schema {
 
   bool get hasSomeOf => _hasSomeOf;
 
-  final List<Uri> _items = <Uri>[];
+  Uri? _items;
 
-  List<Uri> get items => <Uri>[..._items, ..._prefixItems];
-
-  Uri? _item;
-
-  Uri? get item => _item;
-
-  final List<Uri> _prefixItems = <Uri>[];
+  Uri? get items => _items;
 
   List<Uri> get prefixItems => _prefixItems;
+
+  final List<Uri> _prefixItems = <Uri>[];
 
   // [bool, Type.BOOLEAN],
   // [num, Type.NUMBER],
@@ -415,28 +413,15 @@ class Schema {
     }
     if (parsedObject.containsKey('items')) {
       final dynamic items = parsedObject['items'];
-      if (items is List) {
-        for (int i = 0; i < items.length; i++) {
-          if (items[i] is Map<String, dynamic>) {
-            final Uri schemaUri = PathUtils.append(uri, 'items$i');
-            newSchema(
-              uri: schemaUri,
-              schemaStore: schemaStore,
-              object: items[i] as Map<String, dynamic>,
-            ).parentSchema(this);
-            _items.add(schemaUri);
-          }
-        }
-        _hasItems = true;
-      } else if (items is Map<String, dynamic>) {
+      if (items is Map<String, dynamic>) {
         final Uri schemaUri = PathUtils.append(uri, 'items');
         newSchema(
           uri: schemaUri,
           schemaStore: schemaStore,
           object: items,
         ).parentSchema(this);
-        _item = schemaUri;
-        _hasItem = true;
+        _items = schemaUri;
+        _hasItems = true;
       }
     }
     if (parsedObject.containsKey('maxItems')) {
@@ -629,6 +614,7 @@ class Schema {
     if (parsedObject.containsKey('enum')) {
       final dynamic enumValue = parsedObject['enum'];
       if (enumValue is List) {
+        _hasEnum = true;
         _enum = enumValue;
       }
     }
