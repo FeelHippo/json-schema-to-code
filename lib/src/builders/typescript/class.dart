@@ -53,7 +53,6 @@ mixin Class {
       //       "minLength": 1
       //     }
       //   }
-      // TODO(Filippo): this needs review to make sure all cases are covered
       final Map<String, String?> propertiesOfTypeString = propertySchema
           .readTypeStringProperties();
       for (final String? propertyOfTypeString
@@ -65,6 +64,10 @@ mixin Class {
             indentation: 2,
           );
         }
+      }
+
+      if (propertySchema.hasPatternProperties) {
+        defSchema = propertySchema;
       }
 
       // assign name
@@ -101,7 +104,7 @@ mixin Class {
     // open
     OutputUtils.writeLine(
       outputFile,
-      'export interface ${schema.schemaName}RegexMatched {',
+      'export interface ${StringUtils.className(schema.fullClassName())} {',
     );
     for (final MapEntry<String, String> entry
         in schema.patternPropertiesRegexMatcher.entries) {
