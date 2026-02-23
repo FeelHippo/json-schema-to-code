@@ -142,7 +142,7 @@ mixin Class {
 
       OutputUtils.writeLine(
         outputFile,
-        '[key: RegexMatched${entry.key}<"${entry.value}">]: $propertyValue;',
+        '[key: RegexMatched<"${entry.value}">]: $propertyValue;',
         indentation: 2,
       );
     }
@@ -152,12 +152,9 @@ mixin Class {
       '}\n',
     );
     // https://www.geeksforgeeks.org/typescript/how-to-define-a-regex-matched-string-type-in-typescript/
-    for (final MapEntry<String, String> regexMatcher
-        in schema.patternPropertiesRegexMatcher.entries) {
-      OutputUtils.writeLine(
-        outputFile,
-        'type RegexMatched${regexMatcher.key}<Pattern extends string> = `\${string & {__brand: Pattern}}`;',
-      );
-    }
+    OutputUtils.writeLine(
+      outputFile,
+      r'type RegexMatched<Pattern extends string> = `${string & {__brand: Pattern}}`;',
+    );
   }
 }

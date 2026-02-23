@@ -43,7 +43,6 @@ class BuilderTypescript extends GeneratorTypescript with Class, Items {
   void _writeObject(File outputFile, Schema schema) {
     if (schema.hasBeenWritten) return;
 
-    // class interfaces
     if (schema.isClass) {
       writeClass(
         schema: schema,
@@ -51,8 +50,18 @@ class BuilderTypescript extends GeneratorTypescript with Class, Items {
         outputFile: outputFile,
       );
     } else if (schema.hasPrefixItems) {
-      writePrefixItems(
+      writeItems(
         schema: schema,
+        items: schema.prefixItems,
+        schemaStore: schemaStore,
+        outputFile: outputFile,
+        readTypeList: _readTypeList,
+        typeListToString: _typeListToString,
+      );
+    } else if (schema.hasSomeOf) {
+      writeItems(
+        schema: schema,
+        items: schema.someOfUris,
         schemaStore: schemaStore,
         outputFile: outputFile,
         readTypeList: _readTypeList,

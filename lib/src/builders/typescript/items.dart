@@ -1,27 +1,38 @@
 part of '../builder_typescript.dart';
 
 mixin Items {
-  void writePrefixItems({
+  void writeItems({
     required Schema schema,
+    required List<Uri> items,
     required SchemaStore schemaStore,
     required File outputFile,
     required List<String> Function(Schema schema) readTypeList,
     required String Function(List<String>, Schema schema) typeListToString,
   }) {
     String? propertyType;
-    final List<Uri> prefixItemsUris = schema.prefixItems;
-    List<String> prefixItemsTypes = <String>[];
-    for (final Uri prefixItemsUri in prefixItemsUris) {
-      final Schema prefixItemSchema =
-          schemaStore.storedBuiltSchemas[prefixItemsUri]!;
-      prefixItemsTypes = <String>[
-        ...prefixItemsTypes,
-        ...readTypeList(prefixItemSchema),
-        if (prefixItemSchema.hasEnum)
-          '${StringUtils.enumName(prefixItemSchema.schemaName)}Enum',
+    List<String> someOfTypes = <String>[];
+    for (final Uri item in items) {
+      Schema? defSchema;
+      final Schema itemSchema = schemaStore.storedBuiltSchemas[item]!;
+
+      // $defs: $dynamicRef, $id, $ref, $schema
+      final Map<String, Uri?> propertiesUri = itemSchema
+          .readTypeURIProperties();
+      for (final Uri? propertyUri in propertiesUri.values) {
+        if (propertyUri != null) {
+          defSchema = schemaStore.storedBuiltSchemas[propertyUri];
+        }
+      }
+
+      someOfTypes = <String>[
+        ...someOfTypes,
+        ...readTypeList(itemSchema),
+        if (defSchema != null) defSchema.fullClassName(),
+        if (itemSchema.hasEnum)
+          '${StringUtils.enumName(itemSchema.fullClassName())}Enum',
       ];
     }
-    propertyType = typeListToString(prefixItemsTypes, schema);
+    propertyType = typeListToString(someOfTypes, schema);
     OutputUtils.writeLine(
       outputFile,
       'export type ${schema.fullClassName()} = $propertyType;\n',
@@ -39,7 +50,7 @@ mixin Items {
     // open -- declare enum name
     OutputUtils.writeLine(
       outputFile,
-      'export enum ${StringUtils.enumName(schema.schemaName)}Enum {',
+      'export enum ${StringUtils.enumName(schema.fullClassName())}Enum {',
     );
 
     for (final dynamic enumItem in enumList) {
