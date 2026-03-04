@@ -71,7 +71,7 @@ mixin Class {
       }
 
       // assign name
-      final String propertyName = propertySchema.uri.pathSegments.last;
+      String propertyName = propertySchema.uri.pathSegments.last;
 
       // assign value -- defSchema has right of way
       final String propertyValue =
@@ -81,6 +81,12 @@ mixin Class {
       final bool isRequired = schema.requiredProperties.contains(
         propertyName,
       );
+
+      // only allow alphanumeric object keys
+      final RegExp alphanumeric = RegExp(r'^[a-zA-Z0-9]+$');
+      if (!alphanumeric.hasMatch(propertyName)) {
+        propertyName = "'$propertyName'";
+      }
 
       OutputUtils.writeLine(
         outputFile,

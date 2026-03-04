@@ -150,6 +150,7 @@ class Schema {
   num? _maxProperties;
   num? _minProperties;
   bool _required = false;
+  bool _hasDefs = false;
   bool _hasProperties = false;
   bool _hasPatternProperties = false;
   bool _hasPropertyNames = false;
@@ -170,9 +171,9 @@ class Schema {
 
   bool get required => _required;
 
-  bool get hasProperties => _hasProperties;
+  bool get hasDefs => _hasDefs;
 
-  bool get isClass => hasProperties;
+  bool get hasProperties => _hasProperties;
 
   bool get hasPatternProperties => _hasPatternProperties;
 
@@ -500,6 +501,7 @@ class Schema {
               schemaStore: schemaStore,
               object: entry.value as Map<String, dynamic>,
             ).parentSchema(this);
+            _hasDefs = true;
             _defsUris.add(schemaUri);
           }
         }
