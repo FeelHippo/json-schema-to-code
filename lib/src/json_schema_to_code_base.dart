@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:json_schema_to_code/src/generators/generator_typescript.dart';
+import 'package:json_schema_to_code/src/builders/builder_typescript.dart';
 import 'package:json_schema_to_code/src/schema_store.dart';
 
 class SchemaToCode {
@@ -12,9 +12,10 @@ class SchemaToCode {
       File(_schemaFile.path).existsSync(),
       'Error: ${_schemaFile.path} not found',
     );
-    GeneratorTypescript(
+    BuilderTypescript(
       schemaFile: _schemaFile,
       schemaStore: _schemaStore,
+      uri: Uri.file(_schemaFile.path),
     ).build();
     _GeneratorDart(schemaFile: _schemaFile);
   }
@@ -26,9 +27,10 @@ class SchemaToCode {
       File(_schemaFile.path).existsSync(),
       'Error: ${_schemaFile.path} not found',
     );
-    GeneratorTypescript(
+    BuilderTypescript(
       schemaFile: _schemaFile,
       schemaStore: _schemaStore,
+      uri: Uri.file(_schemaFile.path),
     ).build();
   }
 

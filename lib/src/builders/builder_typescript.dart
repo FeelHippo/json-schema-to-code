@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:json_schema_to_code/src/generators/generator_typescript.dart';
 import 'package:json_schema_to_code/src/schema.dart';
 import 'package:json_schema_to_code/src/schema_store.dart';
 import 'package:json_schema_to_code/src/utils/output.dart';
@@ -10,13 +9,15 @@ import 'package:json_schema_to_code/src/utils/string.dart';
 part 'typescript/class.dart';
 part 'typescript/items.dart';
 
-class BuilderTypescript extends GeneratorTypescript with Class, Items {
-  BuilderTypescript(File schemaFile, SchemaStore schemaStore, this.uri)
-    : assert(
-        schemaStore.storedParsedObjects[uri] != null,
-        'ERROR: schema object not found',
-      ),
-      super(schemaFile: schemaFile, schemaStore: schemaStore) {
+class BuilderTypescript with Class, Items {
+  BuilderTypescript({
+    required this.schemaFile,
+    required this.schemaStore,
+    required this.uri,
+  }) : assert(
+         schemaStore.storedParsedObjects[uri] != null,
+         'ERROR: schema object not found',
+       ) {
     _schema = Schema(
       uri: uri,
       schemaStore: schemaStore,
@@ -25,7 +26,25 @@ class BuilderTypescript extends GeneratorTypescript with Class, Items {
   }
 
   final Uri uri;
+  final File schemaFile;
+  final SchemaStore schemaStore;
   late Schema _schema;
+
+  void build() {
+    final String fileName = getFileName();
+    final File outputFile = File(fileName);
+    write(outputFile);
+  }
+
+  String getFileName() {
+    return '${schemaFile.uri.pathSegments.last.replaceAll(
+      '-',
+      '_',
+    ).replaceAll(
+      '.json',
+      '',
+    )}.ts';
+  }
 
   /// Public
   void write(File outputFile) {
